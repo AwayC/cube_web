@@ -2,7 +2,7 @@
 
 export class TaskQue { 
     constructor(taskHandler) {
-        this.histroy = [];
+        this.history = [];
         this.future = []; 
         this.taskHandler = taskHandler; 
 
@@ -18,16 +18,16 @@ export class TaskQue {
         }
         let task = this.future.shift();
         this.taskHandler(task, false);
-        this.histroy.push(task);
+        this.history.push(task);
     }
 
     unDoTask() {
         this.future = []; 
-        if (this.histroy.length === 0) {
+        if (this.history.length === 0) {
             return ; 
         }
-        let task = this.histroy[this.histroy.length - 1];
-        this.histroy.pop();
+        let task = this.history[this.history.length - 1];
+        this.history.pop();
         this.taskHandler(task, true); // reverse
     }
 
@@ -50,7 +50,7 @@ export class TaskQue {
     }
     
     empty() { 
-        return (this.future.length === 0);
+        return (this.history.length === 0);
     }
 
     clear() { 
@@ -63,8 +63,13 @@ export class TaskQue {
         })
     }
     
-    size() { 
+    futureSize() { 
         return this.future.length; 
     }
+
+    historySize() { 
+        return this.history.length; 
+    }
+
     
 }

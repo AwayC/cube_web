@@ -1,46 +1,65 @@
 export class Color { 
-    constructor(name, hexStr, hex) { 
+    constructor(name, hexStr, hex, symbol) { 
+
         this.name = name; 
         this.hexStr = hexStr; 
         this.hex = hex; 
+        this.r = (hex >> 16) & 0xff;
+        this.g = (hex >> 8) & 0xff;
+        this.b = hex & 0xff;
+        this.symbol = symbol;
+
     }
 }
 
 export const 
 W = new Color(
     'white', 
-    '#FFFFFF', 
-    0xffffff
+    '#EEEEEE', 
+    0xeeeeee,
+    "W", 
 ), 
 O = new Color(
     'orange', 
-    '#FF6600', 
-    0xff6600
+    '#EE6600', 
+    0xee6600, 
+    "O", 
+
 ), 
 B = new Color(
     'blue', 
-    '#0000DD', 
-    0x0000dd
+    '#2255DD', 
+    0x2255dd, 
+    "B", 
+
 ), 
 G = new Color(
     'green', 
-    '#00AA00', 
-    0x00aa00
+    '#009922', 
+    0x009922,
+    "G", 
+
 ), 
 Y = new Color(
     'yellow', 
-    '#FFEE00',
-    0xffee00
+    '#FFCC00',
+    0xffcc00, 
+    "Y", 
+
 ), 
 R = new Color(
     'red', 
-    '#FF0000', 
-    0xff0000
+    '#CC0000', 
+    0xcc0000, 
+    "R", 
+
 ), 
 COLORLESS = new Color(
     'NA', 
     '#DDDDDD',
-    0x0f0f0f
+    0x0f0f0f, 
+    "*", 
+
 ); 
 
  

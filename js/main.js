@@ -1,23 +1,29 @@
 import { Renderer } from './render.js';
 import * as THREE from 'three';
 import { Cube } from './cube.js';
-import { createControls } from './control.js';
-
+import { createTrackBallControls } from './control.js';
+import {KeyController} from './control.js';
+import { SerialMannager } from './WebSerial/serial.js';
+import { Commander } from './commander.js';
+import { CubeController } from './cubeController.js';
 
 
 let renderer = new Renderer("Perspective");
-let controls;
+let mouseControls;
 
 renderer.init();
 renderer.setLoop(animate);
 
 const cube = new Cube(renderer);
 
+const cubeCtl = new CubeController(cube);
+
+
 const cameraCoordinatesElement = document.getElementById('camera-coordinates');
 const cameraUpElement = document.getElementById('camera-up');
 
 
-controls = createControls(renderer.camera, renderer.renderer.domElement);
+mouseControls = createTrackBallControls(renderer.camera, renderer.renderer.domElement);
 
 const tasks = [
     "S", "s", 
@@ -34,18 +40,31 @@ const tasks = [
     "Y", "y", 
 ]; 
 
-tasks.forEach((task) => {
-    cube.twistQue.push({ command: task , degree: 90}); 
-})
+// tasks.forEach((task) => {
+//     cube.twistQue.push({ command: task , degree: 90}); 
+// })
 
-console.log(cube.twistQue.size()); 
-cube.twistQue.printTask(); 
+// console.log(cube.twistQue.size()); 
+// cube.twistQue.printTask(); 
+ 
 
+const commander = new Commander();
+commander.addReciever(cubeCtl);
+
+const keyController = new KeyController(renderer, commander, mouseControls);
+keyController.setup();
 
 renderer.render(); 
 
+const serial = new SerialMannager(commander);
+serial.init(); 
+
+cube.printMap(); 
+// cube.clearColor(); 
+
+
 function animate() {
-    controls.update();
+    mouseControls.update();
 
     cube.update();
     const cameraPosition = renderer.camera.position;

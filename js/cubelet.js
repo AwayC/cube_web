@@ -94,9 +94,12 @@ export class Cubelet {
             { id: 5, pos: new THREE.Vector3(0, 0, -this.size / 2), rot: new THREE.Euler(0, Math.PI, 0) }      // Back (colormap[5]) -> BoxGeometry index 5
         ];
 
+        this.faces = []; 
 
         for (let i = 0; i < 6; i++) { 
             const col = colormap[i] || COLORLESS;
+            this.faces[i] = col; 
+
             if (col === COLORLESS) {
                  // console.log(`Face ${i} is colorless, skipping sticker.`);
                  continue;
@@ -120,7 +123,7 @@ export class Cubelet {
             this.mesh.add(stickerMesh); 
         }
 
-        this.faces = []; 
+
         this.map(); 
 
         this.mesh.rotation.set(0, 0, 0); 
@@ -139,12 +142,12 @@ export class Cubelet {
     }
 
     map() { 
-        this.front    =    this.faces[0]; 
-        this.up       =    this.faces[1]; 
-        this.right    =    this.faces[2]; 
-        this.down     =    this.faces[3]; 
-        this.left     =    this.faces[4]; 
-        this.back     =    this.faces[5]; 
+        this.front    =    this.faces[5]; 
+        this.up       =    this.faces[3]; 
+        this.right    =    this.faces[0]; 
+        this.down     =    this.faces[2]; 
+        this.left     =    this.faces[1]; 
+        this.back     =    this.faces[4]; 
     }
 
     setAddress(address) {
@@ -153,7 +156,31 @@ export class Cubelet {
         this.addZ = ((address / 9) | 0);
     }
 
-    rotate(rotation, degree, callback) { 
+
+    clearColor() { 
+        const duration = 200; 
+        const color = COLORLESS.r / 0xff; 
+
+        this.mesh.traverse((child) => {
+            if (child instanceof THREE.Mesh && child !== this.mesh) {
+                new TWEEN.Tween(child.material.color)
+                        .to({r: color, g: color, b: color} , duration)
+                        .easing(TWEEN.Easing.Quadratic.Out)
+                        .start()
+                        .onComplete(() => {
+                            console.log("finish"); 
+                        });
+                // console.log(COLORLESS.r, COLORLESS.g, COLORLESS.b);
+                // child.material.color.set(COLORLESS.hex);
+            }
+        });
+    }
+
+    fillColor() { 
+        
+    }
+
+    rotate(rotation, degree, duration, callback) { 
         let targetX = 0, targetY = 0, targetZ = 0; 
         const delta = 0.01; 
 
@@ -166,37 +193,36 @@ export class Cubelet {
         else if(rotation == 'Z') targetZ = degree, this.cube.isEngagedZ = true; 
         else if(rotation == 'z') targetZ = -degree, this.cube.isEngagedZ = true; 
 
-        const tweenDuration = 200; 
-        const tweenDurationScaled = Math.max((Math.abs(degree) / 90) * tweenDuration, 100); 
+        const tweenDurationScaled = Math.max((Math.abs(degree) / 90) * duration, 50); 
 
         this.previousX = this.x;
         this.previousY = this.y;
         this.previousZ = this.z;
 
-        this.x -= targetX;
-        this.y -= targetY;
-        this.z -= targetZ;
+        this.x += targetX;
+        this.y += targetY;
+        this.z += targetZ;
 
-        this.x %= 360; 
-        this.y %= 360; 
-        this.z %= 360; 
+        // this.x %= 360; 
+        // this.y %= 360; 
+        // this.z %= 360; 
 
         new TWEEN.Tween( this.anchor.rotation )
         .to({
-            x: -this.x * (Math.PI / 180),
-            y: -this.y * (Math.PI / 180),
-            z: -this.z * (Math.PI / 180)
+            x: -targetX * (Math.PI / 180),
+            y: -targetY * (Math.PI / 180),
+            z: -targetZ * (Math.PI / 180)
         }, tweenDurationScaled)
         .easing(TWEEN.Easing.Quadratic.Out)
         .start()
         .onComplete(() => {
 
-            console.log("animation complete"); 
+            // console.log("animation complete"); 
             this.cube.renderer.render();     
 
-            // this.mesh.applyMatrix4(this.anchor.matrix);
+            this.mesh.applyMatrix4(this.anchor.matrix);
 
-            // this.anchor.rotation.set(0, 0, 0); 
+            this.anchor.rotation.set(0, 0, 0); 
 
             let XmapTimes = Math.abs( Math.floor(this.x / 90) -
                                         Math.floor(this.previousX / 90) );
@@ -205,32 +231,40 @@ export class Cubelet {
             let ZmapTimes = Math.abs( Math.floor(this.z / 90) -
                                         Math.floor(this.previousZ / 90) );
 
-            console.log(XmapTimes, YmapTimes, ZmapTimes);
+            // console.log(XmapTimes, YmapTimes, ZmapTimes);
 
             if(XmapTimes) { 
                 while(XmapTimes --) {
 
                     if( targetX < 0 ) this.faces = [ 
-                        this.up, 
-                        this.back,
-                        this.right, 
-                        this.front,    
-                        this.left, 
-                        this.down 
+                        this.right,
+                        this.left,
+                        this.front,
+                        this.back,   
+                        this.down,
+                        this.up
                     ]; 
 					else this.faces = [ 
-                        this.down, 
-                        this.front, 
-                        this.right, 
-                        this.back, 
-                        this.left, 
-                        this.up 
+                        this.right,
+                        this.left,
+                        this.back,
+                        this.front,
+                        this.up,
+                        this.down,
                     ]; 
                     this.map(); 
                 }
                 if(callback) { 
+                    // console.log(callback);  r
                     callback(this.cube.cubelets.slice()); 
                     this.cube.map(); 
+
+                    // console.log(this.cube.front); 
+                    // console.log(this.cube.back);
+                    // console.log(this.cube.left);
+                    // console.log(this.cube.right);
+                    // console.log(this.cube.up);
+                    // console.log(this.cube.down);
                 }
             }
             if(Math.abs(this.x % 90) < delta) { 
@@ -242,29 +276,35 @@ export class Cubelet {
 
             if(YmapTimes) { 
                 while(YmapTimes --) {
-
-
-                    if( targetY < 0 ) this.faces = [ 
-                        this.left, 
-                        this.up, 
-                        this.front, 
-                        this.down, 
-                        this.back, 
-                        this.right 
+                    if( targetY > 0 ) this.faces = [ 
+                        this.front,
+                        this.back,
+                        this.down,
+                        this.up,
+                        this.right,
+                        this.left
                     ]; 
                     else this.faces = [ 
-                        this.right, 
-                        this.up, 
-                        this.back, 
-                        this.down, 
-                        this.front, 
-                        this.left 
+                        this.back,
+                        this.front,
+                        this.down,
+                        this.up,
+                        this.left,
+                        this.right
                     ]; 
                     this.map(); 
                 }
                 if(callback) { 
+                    // console.log(callback);  
                     callback(this.cube.cubelets.slice()); 
                     this.cube.map(); 
+
+                    // console.log(this.cube.front); 
+                    // console.log(this.cube.back);
+                    // console.log(this.cube.left);
+                    // console.log(this.cube.right);
+                    // console.log(this.cube.up);
+                    // console.log(this.cube.down);
                 }
             }
             if(Math.abs(this.y % 90) < delta) { 
@@ -275,40 +315,41 @@ export class Cubelet {
 
 
             if(ZmapTimes) { 
-                console.log(ZmapTimes, typeof(ZmapTimes)); 
+                // console.log(ZmapTimes, typeof(ZmapTimes)); 
                 while(ZmapTimes --) {
 
-                    if( targetZ < 0 ) this.faces = [ 
-                        this.front, 
-                        this.right, 
+                    if( targetZ > 0 ) this.faces = [ 
                         this.down, 
-                        this.left, 
-                        this.up, 
-                        this.back 
+                        this.up,
+                        this.left,
+                        this.right,
+                        this.back,
+                        this.front
                     ]; 
 					else this.faces = [ 
-                        this.front, 
-                        this.left, 
                         this.up, 
-                        this.right, 
-                        this.down, 
-                        this.back 
+                        this.down,
+                        this.right,
+                        this.left,
+                        this.back,
+                        this.front
                     ]; 
+                    this.map(); 
                 }
                 if(callback) {
-                    console.log(callback);  
+                    // console.log(callback);  
                     callback(this.cube.cubelets.slice()); 
                     this.cube.map(); 
+
                 }
             }
             if(Math.abs(this.z % 90) < delta) { 
                 this.z = Math.round(this.z / 90) * 90; 
                 this.previousZ = this.z; 
                 this.cube.isEngagedZ = false; 
-            }
-            console.log(this.x, this.y, this.z); 
+            } 
             
-             
+            
         }); 
     }
 

@@ -18,6 +18,33 @@
       |                       | /
        ----------------------- 
 
+                                     ______________
+                                    | 18   19   20 |
+                                    |              |
+                                    |  9   10   11 |
+                                    |              |
+                                    |  0    1    2 |
+                    |===============|==============|===============|
+                    |  18   9    0  |  0    1    2 |  2   11   20  |
+                    |               |              |               |
+                    |  21   12   3  |  3    4    5 |  5   14   23  |
+                    |               |              |               |
+                    |  24   15   6  |  6    7    8 |  8   17   26  |
+                    |===============|==============|===============|
+                                    |  6    7    8 |
+                                    |              |
+                                    | 15   16   17 |
+                                    |              |
+                                    | 24   25   26 |
+                                    |              |
+                                    |==============|
+                                    | 24   25   26 |
+                                    |              |
+                                    | 21   22   23 |
+                                    |              |
+                                    | 18   19   20 |
+                                    |==============|
+
 */
 
 import * as THREE from 'three'; 
@@ -25,7 +52,6 @@ import {Cubelet} from './cubelet.js';
 import {W, O, B, G, R, Y} from './color.js';
 import {Group} from './group.js';
 import { TaskQue } from './taskQue.js';
-import { call } from 'three/tsl';
 import * as TWEEN from 'three/examples/jsm/libs/tween.module.js';
 
 export class Cube { 
@@ -77,6 +103,30 @@ export class Cube {
 
         this.twistQue = new TaskQue(this.twist.bind(this)); 
 
+        this.reverseCb = null; 
+        this.isReversing = false; 
+
+        this.statusMap = [ 
+            "idle", 
+            "ctrlBot", 
+            "BotSolving", 
+        ]; 
+
+        this.status = "idle"; 
+        this.getingColor = false; 
+
+        this.setTwistDuration = this.setTwistDuration.bind(this);
+        this.stopTwist = this.stopTwist.bind(this); 
+        this.reverse = this.reverse.bind(this); 
+        this.pushTwist = this.pushTwist.bind(this); 
+
+        this.printMap = this.printMap.bind(this); 
+
+
+        this.isCmdcb = true; 
+        this.twistDuration = 200; 
+
+
         console.log("created cubelets"); 
     }
 
@@ -94,19 +144,130 @@ export class Cube {
 
     update() { 
         // console.log(this.twistQue.length); 
-        if(! this.isTwisting && this.twistQue.size()) { 
+        if(! this.isTwisting && ! this.isReversing && this.twistQue.getTaskNum()) {  
             this.twistQue.doTask();
+        }
+        if(this.isReversing) { 
+            if(this.twistQue.empty()) { 
+                this.isReversing = false; 
+                this.reverseCb(); 
+            } else if(! this.isTwisting) { 
+                this.twistQue.unDoTask(); 
+            }
         }
         TWEEN.update(); 
     }
 
+
+    pushTwist(key) { 
+        console.log(key); 
+        if(! this.isReversing)
+            this.twistQue.push({command: key, degree: 90});
+    }
+
+    popAllTwist(key) { 
+        console.log(key); 
+        this.twistQue.clear(); 
+    }
+
+    reverse() { 
+        this.popAllTwist('q'); 
+        this.isReversing = true; 
+    }
+
+    stopTwist() { 
+        this.popAllTwist('q'); 
+    }
+
+    clearColor() { 
+        this.cubelets.forEach((cubelet) => { 
+            cubelet.clearColor(); 
+        }); 
+        
+        this.renderer.render(); 
+    }
+
+    printMap() { 
+        let up = this.up.cubelets; 
+        let left = this.left.cubelets; 
+        let front = this.front.cubelets; 
+        let down = this.down.cubelets; 
+        let right = this.right.cubelets; 
+        let back = this.back.cubelets; 
+
+
+        let str = "";
+        str += " ".repeat(11) + "_".repeat(9) + '\n'; 
+        
+        for(let i = 0;i < 9;i += 3) { 
+            str += " ".repeat(10);
+            str += "| "; 
+            str += up[i].up.symbol + "  " + up[i + 1].up.symbol + "  " + up[i + 2].up.symbol; 
+            str += " |\n";
+            if(i != 6) { 
+                str += " ".repeat(10);
+                str += "|" + " ".repeat(9) + "|\n"; 
+            }
+        }
+
+        const board = "|" + "=".repeat(9); 
+        const board2 = "|" + " ".repeat(9); 
+
+        str += board.repeat(3) + "|\n"; 
+
+        for(let i = 0;i < 9;i += 3) { 
+            str += "| " + left[i].left.symbol + "  " + left[i + 1].left.symbol + "  " + left[i + 2].left.symbol + " ";
+            str += "| " + front[i].front.symbol + "  " + front[i + 1].front.symbol + "  " + front[i + 2].front.symbol + " "; 
+            str += "| " + right[i].right.symbol + "  " + right[i + 1].right.symbol + "  " + right[i + 2].right.symbol + " |\n"; 
+
+            if(i != 6) { 
+                str += board2.repeat(3) + "|\n"; 
+            }
+        }
+
+        str += board.repeat(3) + "|\n";  
+
+
+        for(let i = 0;i < 9;i += 3) { 
+            str += " ".repeat(10);
+            str += "| "; 
+            str += down[i].down.symbol + "  " + down[i + 1].down.symbol + "  " + down[i + 2].down.symbol; 
+            str += " |\n"; 
+            if(i != 6) { 
+                str += " ".repeat(10);
+                str += board2 + "|\n"; 
+            }
+        }
+        str += " ".repeat(10);
+        str += board + "|\n"; 
+
+        for(let i = 0;i < 9;i += 3) { 
+            str += " ".repeat(10);
+            str += "| "; 
+            str += back[i].back.symbol + "  " + back[i + 1].back.symbol + "  " + back[i + 2].back.symbol; 
+            str += " |\n"; 
+            if(i != 6) { 
+                str += " ".repeat(10);
+                str += board2 + "|\n"; 
+            }
+        }
+        str += " ".repeat(10);
+        str += board + "|\n"; 
+
+        console.log(str);
+    }
+
+    setTwistDuration(dur) { 
+        this.twistDuration = dur; 
+    }
+
     twist(task, rev) { 
-        console.log(this); 
+        console.log(task); 
         let command = task.command;
         let degree = task.degree; 
         if(this.isTwisting) return; 
         this.isTwisting = true; 
-        if(rev === false) { 
+        if(rev === true) { 
             if(command === command.toUpperCase()) {
                 command = command.toLowerCase();
             }
@@ -115,8 +276,13 @@ export class Cube {
             }
         }
 
+        const duration = this.twistDuration; 
+        console.log(duration); 
+
+
         if(command == 'X' && ! this.isEngagedY && ! this.isEngagedZ) { 
             const callback = (origin) => { 
+                console.log("X callback"); 
                 this.cubelets = [
                     origin[  6 ], origin[  7 ], origin[  8 ],
                     origin[ 15 ], origin[ 16 ], origin[ 17 ],
@@ -134,13 +300,14 @@ export class Cube {
                 this.isTwisting = false; 
             }; 
             this.cubelets.forEach((cubelet, i) => {
-                if(i === this.cubelets.length - 1) cubelet.rotate('X', degree, callback);
-                else cubelet.rotate('X', degree, null);
+                if(i === this.cubelets.length - 1) cubelet.rotate('X', degree, duration, callback);
+                else cubelet.rotate('X', degree, duration, null);
             }); 
 
         }
         else if(command == 'x' && ! this.isEngagedY && ! this.isEngagedZ) { 
             const callback = (origin) => { 
+                console.log('x callback'); 
                 this.cubelets = [
                     origin[ 18 ], origin[ 19 ], origin[ 20 ],
                     origin[  9 ], origin[ 10 ], origin[ 11 ],
@@ -158,8 +325,8 @@ export class Cube {
                 this.isTwisting = false; 
             }
             this.cubelets.forEach((cubelet, i) => {
-                if(i === this.cubelets.length - 1) cubelet.rotate('x', degree, callback);
-                else cubelet.rotate('x', degree, null);
+                if(i === this.cubelets.length - 1) cubelet.rotate('x', degree, duration, callback);
+                else cubelet.rotate('x', degree, duration, null);
             }); 
 
         }
@@ -182,8 +349,8 @@ export class Cube {
                 this.isTwisting = false; 
             }
             this.cubelets.forEach((cubelet, i) => {
-                if(i === this.cubelets.length - 1) cubelet.rotate('Y', degree, callback);
-                else cubelet.rotate('Y', degree, null);
+                if(i === this.cubelets.length - 1) cubelet.rotate('y', degree, duration, callback);
+                else cubelet.rotate('y', degree, duration, null);
             }); 
 
         }
@@ -206,8 +373,8 @@ export class Cube {
                 this.isTwisting = false; 
             }
             this.cubelets.forEach((cubelet, i) => {
-                if(i === this.cubelets.length - 1) cubelet.rotate('y', degree, callback);
-                else cubelet.rotate('y', degree, null);
+                if(i === this.cubelets.length - 1) cubelet.rotate('Y', degree, duration, callback);
+                else cubelet.rotate('Y', degree, duration, null);
             }); 
 
         }
@@ -230,8 +397,8 @@ export class Cube {
                 this.isTwisting = false; 
             }
             this.cubelets.forEach((cubelet, i) => {
-                if(i === this.cubelets.length - 1) cubelet.rotate('Z', degree, callback);
-                else cubelet.rotate('Z', degree, null);
+                if(i === this.cubelets.length - 1) cubelet.rotate('z', degree, duration, callback);
+                else cubelet.rotate('z', degree, duration, null);
             }); 
 
         }
@@ -254,8 +421,8 @@ export class Cube {
                 this.isTwisting = false; 
             }
             this.cubelets.forEach((cubelet, i) => {
-                if(i === this.cubelets.length - 1) cubelet.rotate('z', degree, callback);
-                else cubelet.rotate('z', degree, null);
+                if(i === this.cubelets.length - 1) cubelet.rotate('Z', degree, duration, callback);
+                else cubelet.rotate('Z', degree, duration, null);
             }); 
 
         }
@@ -276,8 +443,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.front.cubelets.forEach((cubelet, i) => {
-                if(i === this.front.cubelets.length - 1) cubelet.rotate('Z', degree, callback);
-                else cubelet.rotate('Z', degree, null);
+                if(i === this.front.cubelets.length - 1) cubelet.rotate('z', degree, duration, callback);
+                else cubelet.rotate('z', degree, duration, null);
             }); 
 
         }
@@ -298,8 +465,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.front.cubelets.forEach((cubelet, i) => {
-                if(i === this.front.cubelets.length - 1) cubelet.rotate('z', degree, callback);
-                else cubelet.rotate('z', degree, null);
+                if(i === this.front.cubelets.length - 1) cubelet.rotate('Z', degree, duration, callback);
+                else cubelet.rotate('Z', degree, duration, null);
             }); 
 
         }
@@ -320,8 +487,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.back.cubelets.forEach((cubelet, i) => {
-                if(i === this.back.cubelets.length - 1) cubelet.rotate('z', degree, callback);
-                else cubelet.rotate('z', degree, null);
+                if(i === this.back.cubelets.length - 1) cubelet.rotate('Z', degree, duration, callback);
+                else cubelet.rotate('Z', degree, duration, null);
             }); 
 
         }
@@ -342,8 +509,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.back.cubelets.forEach((cubelet, i) => {
-                if(i === this.back.cubelets.length - 1) cubelet.rotate('Z', degree, callback);
-                else cubelet.rotate('Z', degree, null);
+                if(i === this.back.cubelets.length - 1) cubelet.rotate('z', degree, duration, callback);
+                else cubelet.rotate('z', degree, duration, null);
             }); 
 
         }
@@ -364,8 +531,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.right.cubelets.forEach((cubelet, i) => {
-                if(i === this.right.cubelets.length - 1) cubelet.rotate('X', degree, callback);
-                else cubelet.rotate('X', degree, null);
+                if(i === this.right.cubelets.length - 1) cubelet.rotate('X', degree, duration, callback);
+                else cubelet.rotate('X', degree, duration, null);
             }); 
 
         }
@@ -386,8 +553,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.right.cubelets.forEach((cubelet, i) => {
-                if(i === this.right.cubelets.length - 1) cubelet.rotate('x', degree, callback);
-                else cubelet.rotate('x', degree, null);
+                if(i === this.right.cubelets.length - 1) cubelet.rotate('x', degree, duration, callback);
+                else cubelet.rotate('x', degree, duration, null);
             }); 
 
         }
@@ -408,8 +575,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.left.cubelets.forEach((cubelet, i) => {
-                if(i === this.left.cubelets.length - 1) cubelet.rotate('X', degree, callback);
-                else cubelet.rotate('X', degree, null);
+                if(i === this.left.cubelets.length - 1) cubelet.rotate('x', degree, duration, callback);
+                else cubelet.rotate('x', degree, duration, null);
             }); 
 
         }
@@ -430,8 +597,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.left.cubelets.forEach((cubelet, i) => {
-                if(i === this.left.cubelets.length - 1) cubelet.rotate('x', degree, callback);
-                else cubelet.rotate('x', degree, null);
+                if(i === this.left.cubelets.length - 1) cubelet.rotate('X', degree, duration, callback);
+                else cubelet.rotate('X', degree, duration, null);
             }); 
 
         }
@@ -452,8 +619,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.up.cubelets.forEach((cubelet, i) => {
-                if(i === this.up.cubelets.length - 1) cubelet.rotate('Y', degree, callback);
-                else cubelet.rotate('Y', degree, null);
+                if(i === this.up.cubelets.length - 1) cubelet.rotate('y', degree, duration, callback);
+                else cubelet.rotate('y', degree, duration, null);
             }); 
 
         }
@@ -474,8 +641,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.up.cubelets.forEach((cubelet, i) => {
-                if(i === this.up.cubelets.length - 1) cubelet.rotate('y', degree, callback);
-                else cubelet.rotate('y', degree, null);
+                if(i === this.up.cubelets.length - 1) cubelet.rotate('Y', degree, duration, callback);
+                else cubelet.rotate('Y', degree, duration, null);
             }); 
 
         }
@@ -496,8 +663,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.down.cubelets.forEach((cubelet, i) => {
-                if(i === this.down.cubelets.length - 1) cubelet.rotate('y', degree, callback);
-                else cubelet.rotate('y', degree, null);
+                if(i === this.down.cubelets.length - 1) cubelet.rotate('Y', degree, duration, callback);
+                else cubelet.rotate('Y', degree, duration, null);
             }); 
 
         }
@@ -518,8 +685,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.down.cubelets.forEach((cubelet, i) => {
-                if(i === this.down.cubelets.length - 1) cubelet.rotate('Y', degree, callback);
-                else cubelet.rotate('Y', degree, null);
+                if(i === this.down.cubelets.length - 1) cubelet.rotate('y', degree, duration, callback);
+                else cubelet.rotate('y', degree, duration, null);
             }); 
 
         }
@@ -540,8 +707,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.equator.cubelets.forEach((cubelet, i) => {
-                if(i === this.equator.cubelets.length - 1) cubelet.rotate('y', degree, callback);
-                else cubelet.rotate('y', degree, null);
+                if(i === this.equator.cubelets.length - 1) cubelet.rotate('Y', degree, duration, callback);
+                else cubelet.rotate('Y', degree, duration, null);
             }); 
 
         }
@@ -562,8 +729,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.equator.cubelets.forEach((cubelet, i) => {
-                if(i === this.equator.cubelets.length - 1) cubelet.rotate('Y', degree, callback);
-                else cubelet.rotate('Y', degree, null);
+                if(i === this.equator.cubelets.length - 1) cubelet.rotate('y', degree, duration, callback);
+                else cubelet.rotate('y', degree, duration, null);
             }); 
 
         }
@@ -584,8 +751,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.middle.cubelets.forEach((cubelet, i) => {
-                if(i === this.middle.cubelets.length - 1) cubelet.rotate('X', degree, callback);
-                else cubelet.rotate('X', degree, null);
+                if(i === this.middle.cubelets.length - 1) cubelet.rotate('x', degree, duration, callback);
+                else cubelet.rotate('x', degree, duration, null);
             }); 
 
         }
@@ -606,8 +773,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.middle.cubelets.forEach((cubelet, i) => {
-                if(i === this.middle.cubelets.length - 1) cubelet.rotate('x', degree, callback);
-                else cubelet.rotate('x', degree, null);
+                if(i === this.middle.cubelets.length - 1) cubelet.rotate('X', degree, duration, callback);
+                else cubelet.rotate('X', degree, duration, null);
             }); 
         
         }
@@ -628,8 +795,8 @@ export class Cube {
                 console.log("done"); 
             }
             this.standing.cubelets.forEach((cubelet, i) => {
-                if(i === this.standing.cubelets.length - 1) cubelet.rotate('Z', degree, callback);
-                else cubelet.rotate('Z', degree, null);
+                if(i === this.standing.cubelets.length - 1) cubelet.rotate('z', degree, duration, callback);
+                else cubelet.rotate('z', degree, duration, null);
             }); 
         
         }
@@ -650,13 +817,12 @@ export class Cube {
                 console.log("done"); 
             }
             this.standing.cubelets.forEach((cubelet, i) => {
-                if(i === this.standing.cubelets.length - 1) cubelet.rotate('z', degree, callback);
-                else cubelet.rotate('z', degree, null);
+                if(i === this.standing.cubelets.length - 1) cubelet.rotate('Z', degree, duration, callback);
+                else cubelet.rotate('Z', degree, duration, null);
             }); 
         
         }
 
     }
-    
 
 }
