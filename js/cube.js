@@ -49,7 +49,8 @@
 
 import * as THREE from 'three'; 
 import {Cubelet} from './cubelet.js';
-import {W, O, B, G, R, Y} from './color.js';
+import {W, O, B, G, R, Y, COLORLESS, COLORSMAP} from './color.js';
+
 import {Group} from './group.js';
 import { TaskQue } from './taskQue.js';
 import * as TWEEN from 'three/examples/jsm/libs/tween.module.js';
@@ -67,6 +68,16 @@ export class Cube {
 
         this.cubelets = []; 
 
+        /*
+            {
+                0: right,
+                1: left,
+                2: down,
+                3: up,
+                4: back, 
+                5: front
+            }
+        */
         let colorMap = [
             [  , B,  , R,  , W],    [  ,  ,  , R,  , W],    [ G,  ,  , R,  , W],//   0,  1,  2
             [  , B,  ,  ,  , W],    [  ,  ,  ,  ,  , W],    [ G,  ,  ,  ,  , W],//   3,  4,  5
@@ -91,8 +102,14 @@ export class Cube {
             this.cubelets.push(new Cubelet(this, id, colormap, this.renderer));
         }); 
 
+        this.printMapStr(colorMap);
+
 
         this.map(); 
+        
+        this.center = new Group('center', this.cubelets);
+        this.edge = new Group('edge', this.cubelets);
+        this.corner = new Group('corner', this.cubelets);
 
         this.faces = [this.front, this.back, this.right, this.left, this.up, this.down]; 
 
@@ -170,6 +187,10 @@ export class Cube {
         this.twistQue.clear(); 
     }
 
+    clearHis(key) { 
+        this.twistQue.clearHis(); 
+    }
+
     reverse() { 
         this.popAllTwist('q'); 
         this.isReversing = true; 
@@ -187,7 +208,38 @@ export class Cube {
         this.renderer.render(); 
     }
 
-    printMap() { 
+    fillColor(colMap) { 
+        for(let i = 0;i < 27;i ++) { 
+            let cols = []; 
+            [...colMap[i]].forEach((col) => { 
+                cols.push(COLORSMAP[col]);
+            }); 
+            this.cubelets[i].fillColor(cols); 
+        }
+
+        this.renderer.render(); 
+    }
+
+    printMapStr(map) { 
+        let str = ""; 
+        for(let i = 0;i < 27;i ++) {
+            str += "\""; 
+            let colors = map[i]; 
+            for(let j = 0;j < 6;j ++) { 
+                if(colors[j] === null || colors[j] === undefined) 
+                    str += COLORLESS.symbol;
+                else 
+                    str += colors[j].symbol; 
+            }
+            str += "\","; 
+            if((i + 1) % 3 === 0) 
+                str += "\n"; 
+        }
+
+        console.log(str);
+    }
+
+    printMap(arg) { 
         let up = this.up.cubelets; 
         let left = this.left.cubelets; 
         let front = this.front.cubelets; 
@@ -197,12 +249,29 @@ export class Cube {
 
 
         let str = "";
+
+        if(arg === 1) {
+            for(let i = 0;i < 27;i ++) { 
+                if(i != 0) str += '+'; 
+                str += '\"'; 
+                for(let j = 0;j < 6;j ++) { 
+                    str += this.cubelets[i].faces[j].color.symbol; 
+                }
+                str += '\"'; 
+                if((1 + i) % 3 === 0) 
+                    str += "\n"; 
+            }
+
+            console.log(str); 
+            return ; 
+        }
         str += " ".repeat(11) + "_".repeat(9) + '\n'; 
         
         for(let i = 0;i < 9;i += 3) { 
             str += " ".repeat(10);
             str += "| "; 
-            str += up[i].up.symbol + "  " + up[i + 1].up.symbol + "  " + up[i + 2].up.symbol; 
+            str += up[i].up.color.symbol + "  " + up[i + 1].up.color.symbol + "  " + up[i + 2].up.color.symbol; 
+
             str += " |\n";
             if(i != 6) { 
                 str += " ".repeat(10);
@@ -216,9 +285,9 @@ export class Cube {
         str += board.repeat(3) + "|\n"; 
 
         for(let i = 0;i < 9;i += 3) { 
-            str += "| " + left[i].left.symbol + "  " + left[i + 1].left.symbol + "  " + left[i + 2].left.symbol + " ";
-            str += "| " + front[i].front.symbol + "  " + front[i + 1].front.symbol + "  " + front[i + 2].front.symbol + " "; 
-            str += "| " + right[i].right.symbol + "  " + right[i + 1].right.symbol + "  " + right[i + 2].right.symbol + " |\n"; 
+            str += "| " + left[i].left.color.symbol + "  " + left[i + 1].left.color.symbol + "  " + left[i + 2].left.color.symbol + " ";
+            str += "| " + front[i].front.color.symbol + "  " + front[i + 1].front.color.symbol + "  " + front[i + 2].front.color.symbol + " "; 
+            str += "| " + right[i].right.color.symbol + "  " + right[i + 1].right.color.symbol + "  " + right[i + 2].right.color.symbol + " |\n"; 
 
             if(i != 6) { 
                 str += board2.repeat(3) + "|\n"; 
@@ -231,7 +300,7 @@ export class Cube {
         for(let i = 0;i < 9;i += 3) { 
             str += " ".repeat(10);
             str += "| "; 
-            str += down[i].down.symbol + "  " + down[i + 1].down.symbol + "  " + down[i + 2].down.symbol; 
+            str += down[i].down.color.symbol + "  " + down[i + 1].down.color.symbol + "  " + down[i + 2].down.color.symbol; 
             str += " |\n"; 
             if(i != 6) { 
                 str += " ".repeat(10);
@@ -244,7 +313,7 @@ export class Cube {
         for(let i = 0;i < 9;i += 3) { 
             str += " ".repeat(10);
             str += "| "; 
-            str += back[i].back.symbol + "  " + back[i + 1].back.symbol + "  " + back[i + 2].back.symbol; 
+            str += back[i].back.color.symbol + "  " + back[i + 1].back.color.symbol + "  " + back[i + 2].back.color.symbol; 
             str += " |\n"; 
             if(i != 6) { 
                 str += " ".repeat(10);
@@ -277,8 +346,7 @@ export class Cube {
         }
 
         const duration = this.twistDuration; 
-        console.log(duration); 
-
+        
 
         if(command == 'X' && ! this.isEngagedY && ! this.isEngagedZ) { 
             const callback = (origin) => { 

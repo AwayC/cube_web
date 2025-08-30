@@ -25,7 +25,8 @@ export class SerialMannager {
         this.messageInput = document.getElementById('messageInput');
         this.receivedDataEl = document.getElementById('receivedData');
         this.statusEl = document.getElementById('status').querySelector('span');
-        this.startButton = document.getElementById('startButton');
+        // this.startButton = document.getElementById('startButton');
+        this.serialLine = document.getElementById('serial-line');
 
         this.connect = this.connect.bind(this);
         this.closePort = this.closePort.bind(this);
@@ -69,17 +70,17 @@ export class SerialMannager {
             await this.closePort();
         });
 
-        this.startButton.addEventListener('click', this.start); 
+        // this.startButton.addEventListener('click', this.start); 
     }
 
     checkSupport() {
         if ("serial" in navigator) {
-            this.statusEl.textContent = '浏览器支持 Web Serial API。';
+            this.statusEl.textContent = '浏览器支持 Web Serial API';
             this.statusEl.classList.add('connected');
             this.connectButton.disabled = false;
             this.enable = true;
         } else {
-            this.statusEl.textContent = '您的浏览器不支持 Web Serial API。请使用基于 Chromium 的浏览器 (如 Chrome, Edge)。';
+            this.statusEl.textContent = '您的浏览器不支持 Web Serial API。请使用基于 Chromium 的浏览器 (如 Chrome, Edge)';
             this.statusEl.classList.add('error');
             this.connectButton.disabled = true;
             this.enable = false;
@@ -99,10 +100,13 @@ export class SerialMannager {
             this.statusEl.textContent = '已连接';
             this.statusEl.classList.remove('disconnected', 'error');
             this.statusEl.classList.add('connected');
+            this.serialLine.classList.add('connected');
+            this.serialLine.textContent = 'serial connected';
             this.connectButton.disabled = true;
             this.disconnectButton.disabled = false;
             this.sendButton.disabled = false;
-            this.startButton.disabled = false; 
+            // this.startButton.disabled = false; 
+
             console.log('串口已连接并打开:', this.port);
 
             this.reader = this.port.readable.getReader();
@@ -110,10 +114,11 @@ export class SerialMannager {
 
             this.isReading = true; // 设置读取标志为 true
             this.readSerial(); // 启动读取循环
+            this.commander.sendCommand('SERIAL_CONNECED\n', 'serial'); 
 
             // 监听串口断开事件
             this.port.addEventListener('disconnect', () => {
-                console.log('串口已断开（物理断开事件）。');
+                console.log('串口已断开（物理断开事件）');
                 // 物理断开时，自动调用 closePort 进行清理，但要避免重复调用
                 if (this.port) { // 检查 port 是否仍存在，避免 closePort 两次
                     this.closePort();
@@ -123,7 +128,7 @@ export class SerialMannager {
         } catch (error) {
             console.error('连接串口失败:', error);
             if (error.name === 'NotFoundError' && error.message.includes('No port selected')) {
-                this.statusEl.textContent = '连接取消：用户未选择串口。';
+                this.statusEl.textContent = '连接取消：用户未选择串口';
             } else {
                 this.statusEl.textContent = `连接失败: ${error.message}`;
             }
@@ -133,7 +138,7 @@ export class SerialMannager {
             this.disconnectButton.disabled = true;
             this.sendButton.disabled = true;
             this.isReading = false; // 确保读取标志为 false
-            this.startButton.disabled = true; 
+            // this.startButton.disabled = true; 
         }
     }
 
@@ -174,7 +179,7 @@ export class SerialMannager {
                     }
 
                     if (done) {
-                        console.log('串口读取器已完成 (done=true)。');
+                        console.log('串口读取器已完成 (done=true)');
                         break; // 退出内部循环
                     }
                 }
@@ -224,7 +229,7 @@ export class SerialMannager {
         } else if (!msg) {
             alert('请输入要发送的消息。');
         } else {
-            alert('串口未连接，无法发送数据。');
+            alert('串口未连接，无法发送数据');
         }
     }
 
@@ -235,8 +240,10 @@ export class SerialMannager {
         this.connectButton.disabled = true;
         this.disconnectButton.disabled = true;
         this.sendButton.disabled = true;
-        this.startButton.disabled = true; 
-        this.startButton.classList.remove('active'); 
+        // this.startButton.disabled = true; 
+        // this.startButton.classList.remove('active'); 
+        this.serialLine.classList.remove('connected');
+        this.serialLine.textContent = 'serial disconnected';
 
         // 设置 isReading 标志为 false，通知 readSerial 循环停止
         this.isReading = false;

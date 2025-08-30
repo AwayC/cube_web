@@ -63,3 +63,12 @@ COLORLESS = new Color(
 ); 
 
  
+export const COLORSMAP = {
+    "W": W,
+    "O": O,
+    "B": B,
+    "G": G,
+    "Y": Y,
+    "R": R,
+    "*": COLORLESS,
+}

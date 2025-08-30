@@ -6,6 +6,9 @@ export class Renderer {
     constructor(args) {
         this.scene = new THREE.Scene();
         this.camera = null;
+        this.cameraRadius = 430; 
+        this.cameraHeight = this.cameraRadius / Math.sqrt(3); 
+        this.cameraPanelRadius = this.cameraHeight * Math.sqrt(2); 
 
         const canvas = document.getElementById('cube');
         if (!canvas) {
@@ -37,7 +40,7 @@ export class Renderer {
     }
 
     init() { 
-        this.repositionCamera();
+        this.repositionCamera(false);
         
         this.renderer.setSize( this.canvas.clientWidth, this.canvas.clientHeight );
 
@@ -105,26 +108,69 @@ export class Renderer {
     }
 
     repositionCamera(isAnimate = false, Mcontrols) { 
-        if(isAnimate === false){
-            this.camera.position.set(250, -250, -250); 
-            this.camera.lookAt(0, 0, 0); 
-            this.camera.up.set(-0.5, -0.5, 0.5); 
-        }
-        else { 
-            Mcontrols.enabled = false;
-            new TWEEN.Tween(this.camera.position)
-            .to({ x: 250, y: -250, z: -250 }, 1000)
-            .easing(TWEEN.Easing.Quadratic.InOut)
-            .start();
+        let pos = new THREE.Vector3(this.cameraHeight, -this.cameraHeight, -this.cameraHeight);
 
-            new TWEEN.Tween(this.camera.up) 
-            .to({ x: -0.5, y: -0.5, z: 0.5 }, 1000)
+        if (isAnimate === false) {
+            this.camera.position.copy(pos);
+            this.camera.up.set(0, -1, 0); 
+            this.camera.lookAt(0, 0, 0); 
+        } else { 
+            Mcontrols.enabled = false;
+            
+            let startSpherical = new THREE.Spherical().setFromVector3(this.camera.position);
+            let targetSpherical = new THREE.Spherical().setFromVector3(pos);
+            
+            // 处理经度（phi）的周期性，确保补间路径最短
+            if (Math.abs(startSpherical.phi - targetSpherical.phi) > Math.PI) {
+                if (startSpherical.phi > targetSpherical.phi) {
+                    targetSpherical.phi += 2 * Math.PI;
+                } else {
+                    targetSpherical.phi -= 2 * Math.PI;
+                }
+            }
+            console.log(this.camera.position, this.camera.up);
+
+            new TWEEN.Tween(startSpherical)
+            .to(targetSpherical, 1000)
+            .onUpdate(() => {
+
+                this.camera.position.setFromSpherical(startSpherical);
+                console.log(this.camera.position, this.camera.up);
+                this.camera.lookAt(0, 0, 0);
+            })
             .easing(TWEEN.Easing.Quadratic.InOut)
             .start()
             .onComplete(() => {
                 Mcontrols.enabled = true;
-            }); 
+            });
 
+            new TWEEN.Tween(this.camera.up) 
+            .to({ x: 0, y: -1, z: 0 }, 1000)
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .start(); 
+        }
+
+                // new TWEEN.Tween(this.camera.position)
+                // .to({ x: 250, y: -250, z: -250 }, 1000)
+                // .onUpdate(() => {
+                    
+                // })
+                // .easing(TWEEN.Easing.Quadratic.InOut)
+                // .start();
+
+                
+
+
+    }
+
+    getDeg(pos) { 
+        let x = Math.acos(pos.x / Math.sqrt(pos.x * pos.x + pos.y * pos.y));
+        if(pos.y < 0) x = -x; 
+        let y = Math.acos(pos.z / this.cameraRadius); 
+
+        return {
+            x,
+            y,
         }
     }
 
@@ -138,6 +184,12 @@ export class Renderer {
 
     setLoop(loop) { 
         this.renderer.setAnimationLoop(loop);
+    }
+
+    moveCamera(pos) { 
+        this.camera.position.set(pos.x, pos.y, pos.z);
+        this.camera.updateProjectionMatrix(); 
+        this.render();
     }
 
     moveCameraZ(z) { 
@@ -157,4 +209,42 @@ export class Renderer {
         this.camera.updateProjectionMatrix();
         this.render();
     }
+
+    addMouseCtl(ctl) { 
+        this.mouseCtl = ctl; 
+    }
+
+    rotateCamera(deg, time) { 
+        this.mouseCtl.enabled = false;
+
+    // 获取当前相机角度
+        let c = Math.acos(this.camera.position.x / this.cameraPanelRadius); 
+        if (this.camera.position.z < 0) {
+            c = -c; 
+        }
+
+        let cur = { deg: c }; 
+        const target = { deg: (c + deg) }; 
+
+        new TWEEN.Tween(cur)
+        .to(target, time)
+        .onUpdate(() => {
+            // 更新相机位置
+            this.camera.position.set(
+                this.cameraPanelRadius * Math.cos(cur.deg), 
+                this.camera.position.y, // 保持 Y 轴不变
+                this.cameraPanelRadius * Math.sin(cur.deg)
+            ); 
+
+            // 确保相机始终保持正确的“向上”方向
+            this.camera.up.set(0, -1, 0); 
+            this.camera.lookAt(0, 0, 0); 
+        })
+        .easing(TWEEN.Easing.Quadratic.Out)
+        .onComplete(() => {
+            this.mouseCtl.enabled = true;
+        })
+        .start(); 
+    }
+
 }

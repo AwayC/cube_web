@@ -57,6 +57,10 @@ export class TaskQue {
         this.future = [];
     }
 
+    clearHis() { 
+        this.history = [];
+    }
+
     printTask() { 
         this.future.forEach((task) => {
             console.log(task.command);

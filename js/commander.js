@@ -19,9 +19,10 @@ export class Commander {
         
         if(cmds.length === 0) return ; 
         console.log(cmds); 
-
+        
         cmds.forEach((cmd) => { 
             this.reciever.parseCommand(cmd, client); 
+            console.log(cmd); 
         }); 
 
         

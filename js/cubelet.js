@@ -62,6 +62,8 @@ export class Cubelet {
 
         this.size = cube.cubeletSize || 6;
 
+        this.radius = this.size; 
+
         this.X = (this.addX - 1) * this.size;
         this.Y = (this.addY - 1) * this.size;
         this.Z = (this.addZ - 1) * this.size;
@@ -98,8 +100,7 @@ export class Cubelet {
 
         for (let i = 0; i < 6; i++) { 
             const col = colormap[i] || COLORLESS;
-            this.faces[i] = col; 
-
+            this.faces[i] = { mesh: null, color: col }; 
             if (col === COLORLESS) {
                  // console.log(`Face ${i} is colorless, skipping sticker.`);
                  continue;
@@ -119,6 +120,7 @@ export class Cubelet {
             const adjustedPos = faceDef.pos.clone().normalize().multiplyScalar(this.size / 2 + stickerDepth);
             stickerMesh.position.copy(adjustedPos);
             stickerMesh.rotation.copy(faceDef.rot);
+            this.faces[i].mesh = stickerMesh; 
 
             this.mesh.add(stickerMesh); 
         }
@@ -156,6 +158,36 @@ export class Cubelet {
         this.addZ = ((address / 9) | 0);
     }
 
+    setRadius(radius, time, easeType) { 
+        console.log("setRadius", radius); 
+        this.X = (this.addX - 1) * radius;
+        this.Y = (this.addY - 1) * radius;
+        this.Z = (this.addZ - 1) * radius;
+        this.radius = radius; 
+
+        // this.mesh.position.set(this.X, this.Y, this.Z);
+        let easing = null; 
+        if(easeType === "In") { 
+            easing = TWEEN.Easing.Quadratic.In; 
+        } else if(easeType === "Out") { 
+            easing = TWEEN.Easing.Quadratic.Out; 
+        } else { 
+            easing = TWEEN.Easing.Quadratic.InOut; 
+        }
+
+        new TWEEN.Tween( this.mesh.position )
+        .to({
+            x: this.X,
+            y: this.Y,
+            z: this.Z
+        }, time)
+        .easing(easing)
+        .start()
+        .onComplete(() => {
+            console.log("radius done"); 
+        }); 
+    }
+
 
     clearColor() { 
         const duration = 200; 
@@ -174,10 +206,30 @@ export class Cubelet {
                 // child.material.color.set(COLORLESS.hex);
             }
         });
+
+        for(let i = 0;i < 6;i++) { 
+            this.faces[i].color = COLORLESS; 
+        }
+
+        this.map();
+
     }
 
-    fillColor() { 
-        
+    fillColor(colors) { 
+        const duration = 100; 
+
+        for(let i = 0;i < 6;i ++) { 
+            if(colors[i] !== COLORLESS) { 
+                this.faces[i].color = colors[i];
+                if(this.faces[i].mesh === null)  { 
+                    console.log("error colorless"); 
+                    continue; 
+                }
+                this.faces[i].mesh.material.color.set(colors[i].hex);
+            }   
+        }
+
+        this.map(); 
     }
 
     rotate(rotation, degree, duration, callback) { 
