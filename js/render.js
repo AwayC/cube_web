@@ -145,7 +145,7 @@ export class Renderer {
             });
 
             new TWEEN.Tween(this.camera.up) 
-            .to({ x: 0, y: -1, z: 0 }, 1000)
+            .to({ x: -0.5, y: -0.5, z: 0.5 }, 1000)
             .easing(TWEEN.Easing.Quadratic.Out)
             .start(); 
         }

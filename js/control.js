@@ -110,7 +110,7 @@ export class KeyController {
         // sendCommand('SERIAL_CONNECTED\n', 'serial'); 
         (async () => {
             sendCommand('SERIAL_CONNECTED\n', 'serial');
-            await delay(2000); 
+            await delay(1000); 
 
             sendCommand('CONNECT\n', "button"); 
             await delay(1000); 
@@ -119,10 +119,10 @@ export class KeyController {
             await delay(700);
             sendCommand(colMap, 'serial');
             
-            await delay(300);  // 总延迟700+300=1000ms
+            await delay(300);  
             sendCommand(twistStrp, 'serial');
             
-            await delay(3000); // 总延迟1000+3000=4000ms
+            await delay(2000); 
             sendCommand('SOLVE_END\n', 'serial');
             
             this.isTesting = false; 

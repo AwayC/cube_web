@@ -93,24 +93,32 @@ export class CubeController {
             cubelet.setRadius(30, 700, "Out"); 
         }); 
 
-        this.renderer.rotateCamera(Math.PI * 2, 2500);
+        this.renderer.rotateCamera(Math.PI * 2, 2700);
 
         setTimeout(() => {
+            let ptr = 0; 
+            const offset = [300, 0 , -200, -200, 100, -50, 50, 0, 0, 100, 150, 0, 0, 0, 0, 0]; 
             this.cube.corner.cubelets.forEach((cubelet) => { 
-                cubelet.setRadius(20, 1500, ""); 
+                console.log("ptr",ptr); 
+                cubelet.setRadius(20, 1500 + offset[ptr], ""); 
+                ptr += 1; 
             }); 
+            ptr = 0; 
             this.cube.edge.cubelets.forEach((cubelet) => { 
-                cubelet.setRadius(20, 1000, ""); 
+                cubelet.setRadius(20, 1000 + offset[ptr], ""); 
+                ptr += 1; 
             }); 
+            ptr = 0; 
             this.cube.center.cubelets.forEach((cubelet) => { 
-                cubelet.setRadius(20, 500, ""); 
+                cubelet.setRadius(20, 500 + offset[ptr], ""); 
+                ptr += 1; 
             }); 
         }, 700);
 
         setTimeout(() => {
             this.keys.setup();
             this.setStatus("idle");
-        }, 2600);
+        }, 2800);
         // this.renderer.moveCamera({x: -250, y: 250, Z:  250}); 
     }
 
@@ -283,6 +291,7 @@ export class CubeController {
                 this.btns.connectButton.diabled = this.serial === null ? true : (!this.serial.isReading); 
 
                 this.btns.connectButton.textContent = 'connect'; 
+                this.btns.connectButton.classList.remove('connected');
 
                 this.timer.reset(); 
                 break; 
@@ -298,6 +307,7 @@ export class CubeController {
                 this.btns.connectButton.disabled = true; 
                 
                 this.btns.connectButton.textContent = "connected"; 
+                this.btns.connectButton.classList.add('connected');
                 this.timer.reset(); 
                 break; 
 
