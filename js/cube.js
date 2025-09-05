@@ -103,7 +103,7 @@ export class Cube {
         }); 
 
         this.printMapStr(colorMap);
-
+        this.slices = []; 
 
         this.map(); 
         
@@ -117,6 +117,7 @@ export class Cube {
         this.isEngagedX = false; 
         this.isEngagedY = false; 
         this.isEngagedZ = false; 
+        this.isDragging = false; 
 
         this.twistQue = new TaskQue(this.twist.bind(this)); 
 
@@ -157,11 +158,13 @@ export class Cube {
         this.up = new Group('up', this.cubelets); 
         this.equator = new Group('equator', this.cubelets); 
         this.down = new Group('down', this.cubelets);
+
+        this.slices = [this.left, this.middle, this.right, this.up, this.equator, this.down, this.front, this.standing, this.back];
+
     }
 
     update() { 
-        // console.log(this.twistQue.length); 
-        if(! this.isTwisting && ! this.isReversing && this.twistQue.getTaskNum()) {  
+        if(!this.isDragging && ! this.isTwisting && ! this.isReversing && this.twistQue.getTaskNum()) {  
             this.twistQue.doTask();
         }
         if(this.isReversing) { 
@@ -177,13 +180,11 @@ export class Cube {
 
 
     pushTwist(key) { 
-        console.log(key); 
         if(! this.isReversing)
             this.twistQue.push({command: key, degree: 90});
     }
 
     popAllTwist(key) { 
-        console.log(key); 
         this.twistQue.clear(); 
     }
 
@@ -330,27 +331,39 @@ export class Cube {
         this.twistDuration = dur; 
     }
 
+    dragSlice(slice, angle) { 
+        slice.rotation = angle; 
+        slice.cubelets.forEach((cubelet) => { 
+            cubelet.immediateRotate(slice.normal, angle); 
+        }); 
+    }
+
     twist(task, rev) { 
-        console.log(task); 
+        console.log(rev, task); 
         let command = task.command;
         let degree = task.degree; 
         if(this.isTwisting) return; 
         this.isTwisting = true; 
-        if(rev === true) { 
+        if(rev === true || degree < 0) { 
             if(command === command.toUpperCase()) {
                 command = command.toLowerCase();
             }
             else {
                 command = command.toUpperCase();
             }
+            degree = Math.abs(degree); 
         }
-
+        if(task.isDrag) { 
+            this.twistQue.pushToHis({
+                command: command, 
+                degree: degree, 
+            })
+        }
         const duration = this.twistDuration; 
         
 
         if(command == 'X' && ! this.isEngagedY && ! this.isEngagedZ) { 
             const callback = (origin) => { 
-                console.log("X callback"); 
                 this.cubelets = [
                     origin[  6 ], origin[  7 ], origin[  8 ],
                     origin[ 15 ], origin[ 16 ], origin[ 17 ],
@@ -374,8 +387,7 @@ export class Cube {
 
         }
         else if(command == 'x' && ! this.isEngagedY && ! this.isEngagedZ) { 
-            const callback = (origin) => { 
-                console.log('x callback'); 
+            const callback = (origin) => {  
                 this.cubelets = [
                     origin[ 18 ], origin[ 19 ], origin[ 20 ],
                     origin[  9 ], origin[ 10 ], origin[ 11 ],
@@ -390,7 +402,6 @@ export class Cube {
                     origin[  6 ], origin[  7 ], origin[  8 ]
                 ]; 
 
-                this.isTwisting = false; 
             }
             this.cubelets.forEach((cubelet, i) => {
                 if(i === this.cubelets.length - 1) cubelet.rotate('x', degree, duration, callback);
@@ -414,7 +425,6 @@ export class Cube {
                     origin[  6 ], origin[ 15 ], origin[ 24 ]
                 ]; 
 
-                this.isTwisting = false; 
             }
             this.cubelets.forEach((cubelet, i) => {
                 if(i === this.cubelets.length - 1) cubelet.rotate('y', degree, duration, callback);
@@ -438,7 +448,6 @@ export class Cube {
                     origin[ 26 ], origin[ 17 ], origin[  8 ]
                 ]; 
 
-                this.isTwisting = false; 
             }
             this.cubelets.forEach((cubelet, i) => {
                 if(i === this.cubelets.length - 1) cubelet.rotate('Y', degree, duration, callback);
@@ -462,7 +471,6 @@ export class Cube {
                     origin[ 26 ], origin[ 23 ], origin[ 20 ]
                 ]; 
 
-                this.isTwisting = false; 
             }
             this.cubelets.forEach((cubelet, i) => {
                 if(i === this.cubelets.length - 1) cubelet.rotate('z', degree, duration, callback);
@@ -486,7 +494,6 @@ export class Cube {
                     origin[ 18 ], origin[ 21 ], origin[ 24 ]
                 ]; 
 
-                this.isTwisting = false; 
             }
             this.cubelets.forEach((cubelet, i) => {
                 if(i === this.cubelets.length - 1) cubelet.rotate('Z', degree, duration, callback);
@@ -507,8 +514,6 @@ export class Cube {
                 this.cubelets[  7 ] = origin[  5 ]; 
                 this.cubelets[  8 ] = origin[  2 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.front.cubelets.forEach((cubelet, i) => {
                 if(i === this.front.cubelets.length - 1) cubelet.rotate('z', degree, duration, callback);
@@ -529,8 +534,6 @@ export class Cube {
                 this.cubelets[  7 ] = origin[  3 ]; 
                 this.cubelets[  8 ] = origin[  6 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.front.cubelets.forEach((cubelet, i) => {
                 if(i === this.front.cubelets.length - 1) cubelet.rotate('Z', degree, duration, callback);
@@ -551,8 +554,6 @@ export class Cube {
                 this.cubelets[ 25 ] = origin[ 21 ]; 
                 this.cubelets[ 26 ] = origin[ 24 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.back.cubelets.forEach((cubelet, i) => {
                 if(i === this.back.cubelets.length - 1) cubelet.rotate('Z', degree, duration, callback);
@@ -573,8 +574,6 @@ export class Cube {
                 this.cubelets[ 25 ] = origin[ 23 ]; 
                 this.cubelets[ 26 ] = origin[ 20 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.back.cubelets.forEach((cubelet, i) => {
                 if(i === this.back.cubelets.length - 1) cubelet.rotate('z', degree, duration, callback);
@@ -595,8 +594,6 @@ export class Cube {
                 this.cubelets[ 17 ] = origin[ 23 ]; 
                 this.cubelets[ 26 ] = origin[ 20 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.right.cubelets.forEach((cubelet, i) => {
                 if(i === this.right.cubelets.length - 1) cubelet.rotate('X', degree, duration, callback);
@@ -617,8 +614,6 @@ export class Cube {
                 this.cubelets[ 17 ] = origin[  5 ]; 
                 this.cubelets[ 26 ] = origin[  8 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.right.cubelets.forEach((cubelet, i) => {
                 if(i === this.right.cubelets.length - 1) cubelet.rotate('x', degree, duration, callback);
@@ -639,8 +634,6 @@ export class Cube {
                 this.cubelets[ 15 ] = origin[  3 ]; 
                 this.cubelets[ 24 ] = origin[  6 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.left.cubelets.forEach((cubelet, i) => {
                 if(i === this.left.cubelets.length - 1) cubelet.rotate('x', degree, duration, callback);
@@ -661,8 +654,6 @@ export class Cube {
                 this.cubelets[ 15 ] = origin[ 21 ]; 
                 this.cubelets[ 24 ] = origin[ 18 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.left.cubelets.forEach((cubelet, i) => {
                 if(i === this.left.cubelets.length - 1) cubelet.rotate('X', degree, duration, callback);
@@ -683,8 +674,6 @@ export class Cube {
                 this.cubelets[  1 ] = origin[ 11 ]; 
                 this.cubelets[  2 ] = origin[ 20 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.up.cubelets.forEach((cubelet, i) => {
                 if(i === this.up.cubelets.length - 1) cubelet.rotate('y', degree, duration, callback);
@@ -705,8 +694,6 @@ export class Cube {
                 this.cubelets[  1 ] = origin[  9 ]; 
                 this.cubelets[  2 ] = origin[  0 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.up.cubelets.forEach((cubelet, i) => {
                 if(i === this.up.cubelets.length - 1) cubelet.rotate('Y', degree, duration, callback);
@@ -727,8 +714,6 @@ export class Cube {
                 this.cubelets[ 25 ] = origin[ 17 ]; 
                 this.cubelets[ 26 ] = origin[  8 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.down.cubelets.forEach((cubelet, i) => {
                 if(i === this.down.cubelets.length - 1) cubelet.rotate('Y', degree, duration, callback);
@@ -749,8 +734,6 @@ export class Cube {
                 this.cubelets[ 25 ] = origin[ 15 ]; 
                 this.cubelets[ 26 ] = origin[ 24 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.down.cubelets.forEach((cubelet, i) => {
                 if(i === this.down.cubelets.length - 1) cubelet.rotate('y', degree, duration, callback);
@@ -771,8 +754,6 @@ export class Cube {
                 this.cubelets[ 22 ] = origin[ 14 ]; 
                 this.cubelets[ 23 ] = origin[  5 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.equator.cubelets.forEach((cubelet, i) => {
                 if(i === this.equator.cubelets.length - 1) cubelet.rotate('Y', degree, duration, callback);
@@ -793,8 +774,6 @@ export class Cube {
                 this.cubelets[ 22 ] = origin[ 12 ]; 
                 this.cubelets[ 23 ] = origin[ 21 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.equator.cubelets.forEach((cubelet, i) => {
                 if(i === this.equator.cubelets.length - 1) cubelet.rotate('y', degree, duration, callback);
@@ -815,8 +794,6 @@ export class Cube {
                 this.cubelets[ 16 ] = origin[  4 ]; 
                 this.cubelets[ 25 ] = origin[  7 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.middle.cubelets.forEach((cubelet, i) => {
                 if(i === this.middle.cubelets.length - 1) cubelet.rotate('x', degree, duration, callback);
@@ -837,8 +814,6 @@ export class Cube {
                 this.cubelets[ 16 ] = origin[ 22 ]; 
                 this.cubelets[ 25 ] = origin[ 19 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.middle.cubelets.forEach((cubelet, i) => {
                 if(i === this.middle.cubelets.length - 1) cubelet.rotate('X', degree, duration, callback);
@@ -859,8 +834,6 @@ export class Cube {
                 this.cubelets[ 16 ] = origin[ 14 ]; 
                 this.cubelets[ 17 ] = origin[ 11 ]; 
 
-                this.isTwisting = false; 
-                console.log("done"); 
             }
             this.standing.cubelets.forEach((cubelet, i) => {
                 if(i === this.standing.cubelets.length - 1) cubelet.rotate('z', degree, duration, callback);
@@ -880,9 +853,7 @@ export class Cube {
                 this.cubelets[ 15 ] = origin[  9 ]; 
                 this.cubelets[ 16 ] = origin[ 12 ]; 
                 this.cubelets[ 17 ] = origin[ 15 ]; 
-
-                this.isTwisting = false; 
-                console.log("done"); 
+ 
             }
             this.standing.cubelets.forEach((cubelet, i) => {
                 if(i === this.standing.cubelets.length - 1) cubelet.rotate('Z', degree, duration, callback);

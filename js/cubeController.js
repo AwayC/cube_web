@@ -1,6 +1,6 @@
 import {Cube} from './cube.js' ; 
 import { ControlPanel } from './control.js';
-
+import * as TWEEN from 'three/examples/jsm/libs/tween.module.js';
 
 
 export class CubeController { 
@@ -18,6 +18,7 @@ export class CubeController {
             "ctrlBot", 
             "BotSolving", 
         ]; 
+        this.animate = true; 
 
         this.status = "init_anim"; 
         this.gettingColor = false; 
@@ -83,47 +84,100 @@ export class CubeController {
     
     initAnim() { 
         console.log("initAnim");    
-        this.cube.corner.cubelets.forEach((cubelet) => { 
-            cubelet.setRadius(120, 700, "Out"); 
-        }); 
-        this.cube.edge.cubelets.forEach((cubelet) => { 
-            cubelet.setRadius(80, 700, "Out"); 
-        }); 
-        this.cube.center.cubelets.forEach((cubelet) => { 
-            cubelet.setRadius(30, 700, "Out"); 
-        }); 
+        this.resetRotation(); 
 
-        this.renderer.rotateCamera(Math.PI * 2, 2700);
-
-        setTimeout(() => {
-            let ptr = 0; 
-            const offset = [300, 0 , -200, -200, 100, -50, 50, 0, 0, 100, 150, 0, 0, 0, 0, 0]; 
+        if(this.animate) {
             this.cube.corner.cubelets.forEach((cubelet) => { 
-                console.log("ptr",ptr); 
-                cubelet.setRadius(20, 1500 + offset[ptr], ""); 
-                ptr += 1; 
+                cubelet.setRadius(120, 400, "Out"); 
             }); 
-            ptr = 0; 
             this.cube.edge.cubelets.forEach((cubelet) => { 
-                cubelet.setRadius(20, 1000 + offset[ptr], ""); 
-                ptr += 1; 
+                cubelet.setRadius(80, 400, "Out"); 
             }); 
-            ptr = 0; 
             this.cube.center.cubelets.forEach((cubelet) => { 
-                cubelet.setRadius(20, 500 + offset[ptr], ""); 
-                ptr += 1; 
+                cubelet.setRadius(30, 400, "Out"); 
             }); 
-        }, 700);
 
-        setTimeout(() => {
-            this.keys.setup();
-            this.setStatus("idle");
-        }, 2800);
+            const mesh = this.cube.threeObject; 
+            new TWEEN.Tween(mesh.rotation)
+            .to({x: Math.PI * (2 - 0.9), y: Math.PI * (2 + 0.2), z: 0})
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .duration(2700)
+            .start();
+
+            setTimeout(() => {
+                let ptr = 0; 
+                const offset = [400, 0 , -200, -100, 100, 200, 50, 0, 0, 100, 150, 0, 0, 0, 0, 0]; 
+                this.cube.corner.cubelets.forEach((cubelet) => { 
+                    console.log("ptr",ptr); 
+                    cubelet.setRadius(20, 1500 + offset[ptr], ""); 
+                    ptr += 1; 
+                }); 
+                ptr = 0; 
+                this.cube.edge.cubelets.forEach((cubelet) => { 
+                    cubelet.setRadius(20, 1000 + offset[ptr], ""); 
+                    ptr += 1; 
+                }); 
+                ptr = 0; 
+                this.cube.center.cubelets.forEach((cubelet) => { 
+                    cubelet.setRadius(20, 500 + offset[ptr], ""); 
+                    ptr += 1; 
+                }); 
+            }, 400);
+
+            setTimeout(() => {
+                this.keys.setup();
+                this.mouse.setup();
+                this.setStatus("idle");
+            }, 2800);
+        }
+        else { 
+            this.keys.setup(); 
+            this.mouse.setup();
+            this.setStatus("idle"); 
+        }
+        
         // this.renderer.moveCamera({x: -250, y: 250, Z:  250}); 
+    }
+
+    resetRotation(anim = false) { 
+        const mesh = this.cube.threeObject; 
+        if(anim === false) { 
+            mesh.rotation.set(-Math.PI * 0.9, Math.PI * 0.2, 0); 
+        } else { 
+
+            let target = {
+                x: -Math.PI * 0.9,
+                y: Math.PI * 0.2,
+                z: 0,
+            }
+
+            if(Math.abs(target.x - mesh.rotation.x) > Math.PI) { 
+                if(target.x > mesh.rotation.x) { 
+                    target.x -= Math.PI * 2; 
+                } else { 
+                    target.x += Math.PI * 2; 
+                }
+            }
+            if(Math.abs(target.y - mesh.rotation.y) > Math.PI) { 
+                if(target.y > mesh.rotation.y) { 
+                    target.y -= Math.PI * 2; 
+                } else { 
+                    target.y += Math.PI * 2; 
+                }
+            }
+
+            new TWEEN.Tween(mesh.rotation)
+            .to(target, 1000)
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .start();
+        }
     }
 
     addKeys(keys) { 
         this.keys = keys; 
+    }
+    addMouse(mouse) { 
+        this.mouse = mouse; 
     }
 
     getColor(map) { 
@@ -208,6 +262,11 @@ export class CubeController {
             return ; 
         }
 
+        if(cmd === 'ResetRatation') { 
+            this.resetRotation(true); 
+            return ; 
+        }
+
 
         if(this.status === 'ctrlBot') { 
             if(this.cmdFilter(cmd) === false) return ; 
@@ -283,6 +342,7 @@ export class CubeController {
 
     setStatus(status) { 
         this.status = status; 
+        this.cube.setTwistDuration(this.getDuration()); 
         switch(status) { 
             case 'idle': 
                 this.btns.resetButton.disabled = false;
@@ -292,7 +352,8 @@ export class CubeController {
 
                 this.btns.connectButton.textContent = 'connect'; 
                 this.btns.connectButton.classList.remove('connected');
-
+                this.mouse.enableTwist = true; 
+                this.mouse.setup(); 
                 this.timer.reset(); 
                 break; 
 
@@ -305,6 +366,7 @@ export class CubeController {
                 this.btns.reverseButton.disabled = true; 
                 this.btns.startButton.disabled = false; 
                 this.btns.connectButton.disabled = true; 
+                this.mouse.enableTwist = false; 
                 
                 this.btns.connectButton.textContent = "connected"; 
                 this.btns.connectButton.classList.add('connected');
@@ -315,6 +377,7 @@ export class CubeController {
                 this.btns.reverseButton.disabled = true; 
                 this.btns.startButton.disabled = true; 
                 this.btns.connectButton.disabled = true; 
+                this.mouse.enableTwist = false;  
                 this.startSolveing();  
                 
                 break; 

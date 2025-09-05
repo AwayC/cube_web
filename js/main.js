@@ -8,10 +8,11 @@ import { SerialMannager } from './WebSerial/serial.js';
 import { Commander } from './commander.js';
 import { CubeController } from './cubeController.js';
 import { TimePanel } from './timePanel.js'; 
+import { MouseController } from './control.js';
 
 
 let renderer = new Renderer("Perspective");
-let mouseControls;
+let mouseControls = null; 
 
 renderer.init();
 renderer.setLoop(animate);
@@ -37,7 +38,7 @@ const cameraCoordinatesElement = document.getElementById('camera-coordinates');
 const cameraUpElement = document.getElementById('camera-up');
 
 
-mouseControls = createTrackBallControls(renderer.camera, renderer.renderer.domElement);
+// mouseControls = createTrackBallControls(renderer.camera, renderer.renderer.domElement);
 
 
 renderer.addMouseCtl(mouseControls);
@@ -63,8 +64,8 @@ const tasks = [
 // console.log(cube.twistQue.size()); 
 // cube.twistQue.printTask(); 
  
-
-
+mouseControls = new MouseController(cube, renderer, renderer.getCanvas());
+// mouseControls.setup(); 
 
 const keyController = new KeyController(renderer, commander, mouseControls);
 // keyController.setup();
@@ -78,6 +79,7 @@ const sPanel = new SerialPanel();
 
 cubeCtl.addSerial(serial); 
 cubeCtl.addKeys(keyController); 
+cubeCtl.addMouse(mouseControls);
 
 
 cube.printMap(); 
@@ -106,7 +108,7 @@ const colMap = [
     "*BO*Y*","**O*Y*","G*O*Y*",
 ]; 
 
-
+// cubeCtl.animate = false; 
 cubeCtl.initAnim(); 
 
 function animate() {

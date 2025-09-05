@@ -62,6 +62,10 @@ export class Renderer {
 
     }
 
+    getCanvas() { 
+        return this.canvas; 
+    }
+
     createAxes() { 
         let axesHelper = []; 
         const origin = new THREE.Vector3(-40, -40, -40);
@@ -111,8 +115,7 @@ export class Renderer {
         let pos = new THREE.Vector3(this.cameraHeight, -this.cameraHeight, -this.cameraHeight);
 
         if (isAnimate === false) {
-            this.camera.position.copy(pos);
-            this.camera.up.set(0, -1, 0); 
+            this.camera.position.set(0, 0, this.cameraRadius);
             this.camera.lookAt(0, 0, 0); 
         } else { 
             Mcontrols.enabled = false;

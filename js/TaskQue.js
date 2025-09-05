@@ -12,6 +12,10 @@ export class TaskQue {
         this.future.push(task); 
     }
 
+    pushToHis(task) { 
+        this.history.push(task);
+    }
+
     doTask() { 
         if(this.future.length == 0) { 
             return ; 

@@ -102,7 +102,6 @@ export class Cubelet {
             const col = colormap[i] || COLORLESS;
             this.faces[i] = { mesh: null, color: col }; 
             if (col === COLORLESS) {
-                 // console.log(`Face ${i} is colorless, skipping sticker.`);
                  continue;
             }
 
@@ -139,8 +138,6 @@ export class Cubelet {
         this.previousZ = 0;
 
         this.isTwisting = false; 
-
-        console.log("created cubelet", this.id, this.X, this.Y, this.Z);
     }
 
     map() { 
@@ -159,7 +156,7 @@ export class Cubelet {
     }
 
     setRadius(radius, time, easeType) { 
-        console.log("setRadius", radius); 
+
         this.X = (this.addX - 1) * radius;
         this.Y = (this.addY - 1) * radius;
         this.Z = (this.addZ - 1) * radius;
@@ -184,7 +181,7 @@ export class Cubelet {
         .easing(easing)
         .start()
         .onComplete(() => {
-            console.log("radius done"); 
+
         }); 
     }
 
@@ -200,10 +197,7 @@ export class Cubelet {
                         .easing(TWEEN.Easing.Quadratic.Out)
                         .start()
                         .onComplete(() => {
-                            console.log("finish"); 
                         });
-                // console.log(COLORLESS.r, COLORLESS.g, COLORLESS.b);
-                // child.material.color.set(COLORLESS.hex);
             }
         });
 
@@ -230,6 +224,10 @@ export class Cubelet {
         }
 
         this.map(); 
+    }
+
+    immediateRotate(axis, degree) { 
+        this.anchor.rotation.set(axis.x * degree, axis.y * degree, axis.z * degree);
     }
 
     rotate(rotation, degree, duration, callback) { 
@@ -269,7 +267,6 @@ export class Cubelet {
         .start()
         .onComplete(() => {
 
-            // console.log("animation complete"); 
             this.cube.renderer.render();     
 
             this.mesh.applyMatrix4(this.anchor.matrix);
@@ -282,8 +279,6 @@ export class Cubelet {
                                         Math.floor(this.previousY / 90) );
             let ZmapTimes = Math.abs( Math.floor(this.z / 90) -
                                         Math.floor(this.previousZ / 90) );
-
-            // console.log(XmapTimes, YmapTimes, ZmapTimes);
 
             if(XmapTimes) { 
                 while(XmapTimes --) {
@@ -305,19 +300,12 @@ export class Cubelet {
                         this.down,
                     ]; 
                     this.map(); 
+                    if(callback) { 
+                        callback(this.cube.cubelets.slice()); 
+                        this.cube.map();
+                    }
                 }
-                if(callback) { 
-                    // console.log(callback);  r
-                    callback(this.cube.cubelets.slice()); 
-                    this.cube.map(); 
-
-                    // console.log(this.cube.front); 
-                    // console.log(this.cube.back);
-                    // console.log(this.cube.left);
-                    // console.log(this.cube.right);
-                    // console.log(this.cube.up);
-                    // console.log(this.cube.down);
-                }
+                 
             }
             if(Math.abs(this.x % 90) < delta) { 
                 this.x = Math.round(this.x / 90) * 90;  
@@ -345,19 +333,13 @@ export class Cubelet {
                         this.right
                     ]; 
                     this.map(); 
+                    if(callback) {  
+                        callback(this.cube.cubelets.slice()); 
+                        this.cube.map();
+                    }
                 }
-                if(callback) { 
-                    // console.log(callback);  
-                    callback(this.cube.cubelets.slice()); 
-                    this.cube.map(); 
 
-                    // console.log(this.cube.front); 
-                    // console.log(this.cube.back);
-                    // console.log(this.cube.left);
-                    // console.log(this.cube.right);
-                    // console.log(this.cube.up);
-                    // console.log(this.cube.down);
-                }
+                 
             }
             if(Math.abs(this.y % 90) < delta) { 
                 this.y = Math.round(this.y / 90) * 90; 
@@ -367,7 +349,6 @@ export class Cubelet {
 
 
             if(ZmapTimes) { 
-                // console.log(ZmapTimes, typeof(ZmapTimes)); 
                 while(ZmapTimes --) {
 
                     if( targetZ > 0 ) this.faces = [ 
@@ -387,13 +368,12 @@ export class Cubelet {
                         this.front
                     ]; 
                     this.map(); 
+                    if(callback) { 
+                        callback(this.cube.cubelets.slice()); 
+                        this.cube.map(); 
+                    }
                 }
-                if(callback) {
-                    // console.log(callback);  
-                    callback(this.cube.cubelets.slice()); 
-                    this.cube.map(); 
-
-                }
+                
             }
             if(Math.abs(this.z % 90) < delta) { 
                 this.z = Math.round(this.z / 90) * 90; 
@@ -401,7 +381,7 @@ export class Cubelet {
                 this.cube.isEngagedZ = false; 
             } 
             
-            
+            if(callback) this.cube.isTwisting = false, this.cube.isDragging = false; 
         }); 
     }
 

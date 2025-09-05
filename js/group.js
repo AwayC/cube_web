@@ -31,11 +31,12 @@
 */
 
 
+import * as THREE from 'three';
+
 export const groupInfo = { 
     "front": {
-        x: false, 
-        y: true, 
-        z: false, 
+        normal: new THREE.Vector3(0, 0, 1), 
+        axis: 'z', 
         ids: [
             0, 1, 2, 
             3, 4, 5, 
@@ -43,9 +44,8 @@ export const groupInfo = {
         ]
     }, 
     "standing": {
-        x: false, 
-        y: true, 
-        z: false, 
+        normal: new THREE.Vector3(0, 0, 1),
+        axis: 'z', 
         ids: [   
              9, 10, 11, 
             12, 13, 14,
@@ -53,9 +53,8 @@ export const groupInfo = {
         ]
     }, 
     "back": {
-        x: false, 
-        y: true, 
-        z: false,
+        normal: new THREE.Vector3(0, 0, -1),
+        axis: 'z', 
         ids: [
             24, 25, 26,
             21, 22, 23,
@@ -63,9 +62,8 @@ export const groupInfo = {
         ]
     }, 
     "left": {
-        x: false, 
-        y: false, 
-        z: true, 
+        normal: new THREE.Vector3(1, 0, 0),
+        axis: 'x', 
         ids: [
             18,  9,  0, 
             21, 12,  3, 
@@ -73,9 +71,8 @@ export const groupInfo = {
         ]
     }, 
     "middle": { 
-        x: false, 
-        y: false, 
-        z: true,  
+        normal: new THREE.Vector3(1, 0, 0),
+        axis: 'x', 
         ids: [
              1,  4,  7, 
             10, 13, 16, 
@@ -83,9 +80,8 @@ export const groupInfo = {
         ]
     }, 
     "right": {
-        x: false, 
-        y: false, 
-        z: true,  
+        normal: new THREE.Vector3(-1, 0, 0),
+        axis: 'x', 
         ids: [
              2, 11, 20, 
              5, 14, 23,
@@ -93,9 +89,8 @@ export const groupInfo = {
         ]
     }, 
     "up": { 
-        x: true, 
-        y: false, 
-        z: false,
+        normal: new THREE.Vector3(0, 1, 0),
+        axis: 'y', 
         ids: [
              18, 19, 20,
              9, 10, 11,
@@ -103,9 +98,8 @@ export const groupInfo = {
         ]
     }, 
     "equator": { 
-        x: true,       
-        y: false, 
-        z: false, 
+        normal: new THREE.Vector3(0, -1, 0),
+        axis: 'y', 
         ids: [
              3,  4,  5, 
             12, 13, 14, 
@@ -113,9 +107,8 @@ export const groupInfo = {
         ]
     }, 
     "down": { 
-        x: true, 
-        y: false, 
-        z: false,
+        normal: new THREE.Vector3(0, -1, 0),
+        axis: 'y', 
         ids: [
             6,  7,  8, 
             15, 16, 17,
@@ -146,10 +139,12 @@ export const groupInfo = {
 export class Group { 
     constructor(name, cubelets) {
         this.name = name; 
-        this.info = groupInfo[name]; 
+        this.normal = groupInfo[name].normal;
+        this.ids = groupInfo[name].ids;
         this.cubelets = []; 
-
-        this.info.ids.forEach(id => {
+        this.axis = groupInfo[name].axis;
+        this.rotation = 0; 
+        this.ids.forEach(id => {
             this.cubelets.push(cubelets[id]);
         });
     }
