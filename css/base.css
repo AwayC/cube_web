@@ -269,3 +269,26 @@ button:disabled {
     letter-spacing: 2px;
     transform: skew(-8deg);
 }
+
+.rotation-container { 
+    position: absolute;
+    top: 80%; 
+    width: 100%; 
+    text-align: center;
+}
+
+.rotation-container button {
+    background-color: rgba(157, 155, 155, 0.5);
+    color: darkgrey; 
+    font-size: 1.2rem;
+    padding: 12px;
+    border-radius: 5px;
+    width: 5rem; 
+    height: 5rem; 
+    box-sizing: border-box;
+}
+
+button img { 
+    width: 100%;
+    height: 100%;
+}
